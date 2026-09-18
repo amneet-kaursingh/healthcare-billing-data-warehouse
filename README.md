@@ -20,14 +20,7 @@ University. Group project.
 
 ## Source database (OLTP)
 
-```mermaid
-erDiagram
-    Patient ||--o{ Appointment : books
-    Doctor ||--o{ Appointment : attends
-    Appointment ||--o{ MedicalProcedure : includes
-    Appointment ||--o{ Billing : generates
-    Patient ||--o{ Billing : receives
-```
+![Source OLTP schema](schema_oltp.png)
 
 | Table              | Holds                                          |
 | ------------------ | ---------------------------------------------- |
@@ -42,14 +35,7 @@ Full definitions with types, keys and foreign keys are in
 
 ## Data warehouse (star schema)
 
-```mermaid
-erDiagram
-    Fact_BillingPerformance }o--|| Dimension_Time : "when"
-    Fact_BillingPerformance }o--|| Dimension_Doctor : "who treated"
-    Fact_BillingPerformance }o--|| Dimension_Patient : "who was treated"
-    Fact_BillingPerformance }o--|| Dimension_Procedure : "what was done"
-    Fact_BillingPerformance }o--|| Dimension_BillingItem : "what was billed"
-```
+![Star schema data warehouse](schema_warehouse.png)
 
 One fact table surrounded by five dimensions. The dimensions are flat and join
 directly to the fact table, which keeps queries simple and fast.
@@ -93,26 +79,19 @@ source system's keys.
 
 ## Reporting view
 [`vw_billing_performance_summary.sql`](vw_billing_performance_summary.sql)
-answers the main question in one query: total revenue and total appointments by
-doctor specialization, procedure and month.
-
-```sql
-SELECT d.Specialization, p.ProcedureName, t.Month, t.Year,
-       SUM(f.Amount) AS TotalRevenue,
-       SUM(f.AppointmentCount) AS TotalAppointments
-FROM Fact_BillingPerformance f
-JOIN Dimension_Doctor d ON f.Dimension_Doctor_DoctorKey = d.DoctorKey
-JOIN Dimension_Procedure p ON f.Dimension_Procedure_ProcedureKey = p.ProcedureKey
-JOIN Dimension_Time t ON f.Dimension_Time_TimeKey = t.TimeKey
-WHERE f.Amount > 0
-GROUP BY d.Specialization, p.ProcedureName, t.Month, t.Year
-ORDER BY TotalRevenue DESC;
-```
+answers the main question in one query. It joins the fact table to the doctor,
+procedure and time dimensions and returns total revenue and total appointments
+per specialization, procedure and month, sorted by revenue.
 
 ## Report
 `Report_BillingPerformance_final.knwf` joins the fact table to the doctor
 dimension in the database, groups the billed amount by specialization, sorts it
 and draws a bar chart of total revenue per medical specialization.
+
+![Total billed amount by specialization](report_revenue_by_specialization.png)
+
+Oncology, surgery and endocrinology bill the most, and the drop from the top
+three to the rest is the kind of pattern the warehouse was built to surface.
 
 ## My contributions
 Group project. My work:
@@ -133,6 +112,8 @@ Group project. My work:
 | `*.mwb`                         | the MySQL Workbench models                   |
 | `*.knwf`                        | the KNIME workflows                          |
 | `*_final.csv`                   | the source data                              |
+| `schema_*.png`                  | the schema diagrams from MySQL Workbench     |
+| `report_*.png`                  | the bar chart produced by the KNIME report   |
 
 The two `.sql` schema files were generated from the Workbench models so the
 design can be read without installing MySQL Workbench.
