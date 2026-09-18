@@ -20,7 +20,7 @@ University. Group project.
 
 ## Source database (OLTP)
 
-![Source OLTP schema](schema_oltp.png)
+![Source OLTP schema](images/schema_oltp.png)
 
 | Table              | Holds                                          |
 | ------------------ | ---------------------------------------------- |
@@ -31,11 +31,11 @@ University. Group project.
 | `Billing`          | invoice lines with the billed amount            |
 
 Full definitions with types, keys and foreign keys are in
-[`schema_oltp.sql`](schema_oltp.sql).
+[`schema_oltp.sql`](schema/schema_oltp.sql).
 
 ## Data warehouse (star schema)
 
-![Star schema data warehouse](schema_warehouse.png)
+![Star schema data warehouse](images/schema_warehouse.png)
 
 One fact table surrounded by five dimensions. The dimensions are flat and join
 directly to the fact table, which keeps queries simple and fast.
@@ -60,7 +60,7 @@ directly to the fact table, which keeps queries simple and fast.
 high or low. A large billed amount can come from many appointments, many
 invoice lines, or a few expensive procedures.
 
-Full definitions are in [`schema_warehouse.sql`](schema_warehouse.sql).
+Full definitions are in [`schema_warehouse.sql`](schema/schema_warehouse.sql).
 
 ## ETL
 Built in KNIME Analytics Platform, reading from and writing to MySQL. The
@@ -69,26 +69,26 @@ already exists.
 
 | Workflow                                    | Nodes | What it does                                                                 |
 | ------------------------------------------- | ----- | ---------------------------------------------------------------------------- |
-| `Healthcare_Dimension_Time_final.knwf`      | 11    | generates a date range, extracts day, month, quarter, year and month name, writes `Dimension_Time` |
-| `Healthcare_Dimension_Tables_final.knwf`    | 37    | reads the four source tables, assigns surrogate keys, cleans the text fields and writes the doctor, patient, procedure and billing item dimensions |
-| `Healthcare_Fact_BillingPerformance_final.knwf` | 21 | joins the billing records to all five dimension keys, calculates the measures and writes `Fact_BillingPerformance` |
+| `etl/Healthcare_Dimension_Time_final.knwf`      | 11    | generates a date range, extracts day, month, quarter, year and month name, writes `Dimension_Time` |
+| `etl/Healthcare_Dimension_Tables_final.knwf`    | 37    | reads the four source tables, assigns surrogate keys, cleans the text fields and writes the doctor, patient, procedure and billing item dimensions |
+| `etl/Healthcare_Fact_BillingPerformance_final.knwf` | 21 | joins the billing records to all five dimension keys, calculates the measures and writes `Fact_BillingPerformance` |
 
 Each dimension gets its own surrogate key through a Counter Generation node,
 rather than reusing the operational ID, so the warehouse does not depend on the
 source system's keys.
 
 ## Reporting view
-[`vw_billing_performance_summary.sql`](vw_billing_performance_summary.sql)
+[`vw_billing_performance_summary.sql`](schema/vw_billing_performance_summary.sql)
 answers the main question in one query. It joins the fact table to the doctor,
 procedure and time dimensions and returns total revenue and total appointments
 per specialization, procedure and month, sorted by revenue.
 
 ## Report
-`Report_BillingPerformance_final.knwf` joins the fact table to the doctor
+`etl/Report_BillingPerformance_final.knwf` joins the fact table to the doctor
 dimension in the database, groups the billed amount by specialization, sorts it
 and draws a bar chart of total revenue per medical specialization.
 
-![Total billed amount by specialization](report_revenue_by_specialization.png)
+![Total billed amount by specialization](images/report_revenue_by_specialization.png)
 
 Oncology, surgery and endocrinology bill the most, and the drop from the top
 three to the rest is the kind of pattern the warehouse was built to surface.
@@ -104,16 +104,12 @@ Group project. My work:
 
 ## Repository contents
 
-| File                            | What it is                                  |
-| ------------------------------- | ------------------------------------------- |
-| `schema_oltp.sql`               | the operational database, as readable SQL    |
-| `schema_warehouse.sql`          | the star schema, as readable SQL             |
-| `vw_billing_performance_summary.sql` | the reporting view                     |
-| `*.mwb`                         | the MySQL Workbench models                   |
-| `*.knwf`                        | the KNIME workflows                          |
-| `*_final.csv`                   | the source data                              |
-| `schema_*.png`                  | the schema diagrams from MySQL Workbench     |
-| `report_*.png`                  | the bar chart produced by the KNIME report   |
+| Folder     | What's in it                                                        |
+| ---------- | ------------------------------------------------------------------- |
+| `schema/`  | both schemas as readable SQL, the reporting view, and the MySQL Workbench models |
+| `etl/`     | the four KNIME workflows                                             |
+| `data/`    | the five source tables as CSV                                        |
+| `images/`  | the schema diagrams and the report chart                             |
 
 The two `.sql` schema files were generated from the Workbench models so the
 design can be read without installing MySQL Workbench.
